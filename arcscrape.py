@@ -36,8 +36,8 @@ class Server(object):
             return out
 
     def convert_all(self,geom_type='Polygon'):
-        for num,data in self.ids.items():
-            self.ids[num] = to_geojson(data,geom_type=geom_type)
+
+        self.ids = {num : to_geojson(data, geom_type=geom_type) for num,data in self.ids.items()}
 
     def save_all(self, loc):
 
