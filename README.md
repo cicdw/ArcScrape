@@ -1,4 +1,4 @@
-# ArcScraper
+# ArcScrape
 Small API for scraping ArcGIS data from online MapServers.
 
 ## Example
