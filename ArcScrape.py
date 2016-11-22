@@ -1,6 +1,7 @@
-import urllib.request
+import getopt
 import json
 import sys
+import urllib.request
 
 class Server(object):
 
@@ -34,6 +35,15 @@ class Server(object):
             self.ids[num] = out
             return out
 
+    def convert_all(self,geom_type='Polygon'):
+        for num,data in self.ids.items():
+            self.ids[num] = to_geojson(data,geom_type=geom_type)
+
+    def save_all(self, loc):
+        for num,data in self.ids.items():
+            with open(loc + '{}.json'.format(num), 'w') as f:
+                json.dump(data,f)
+
     def __init__(self, base_url, layer=0):
         self.url = base_url
         self.layer = layer
@@ -62,7 +72,7 @@ def to_geojson(data,geom_type='Polygon'):
             data['feature']['attributes']
         }
 
-    return geojson 
+    return geojson
 
 def main():
     return None
