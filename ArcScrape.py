@@ -1,5 +1,6 @@
 import urllib.request
 import json
+import sys
 
 class Server(object):
 
@@ -21,37 +22,50 @@ class Server(object):
         return out
 
     def get_id(self,num):
-        url = self.url + '/{0}/{1}?f=json&pretty=true'.format(self.layer, num)
-        with urllib.request.urlopen(url) as site:
-            resp = site.read().decode('utf-8')
+        if num in self.ids:
+            return self.ids[num]
 
-        return json.loads(resp)
+        else:
+            url = self.url + '/{0}/{1}?f=json&pretty=true'.format(self.layer, num)
+            with urllib.request.urlopen(url) as site:
+                resp = site.read().decode('utf-8')
+
+            out = json.loads(resp)
+            self.ids[num] = out
+            return out
 
     def __init__(self, base_url, layer=0):
         self.url = base_url
         self.layer = layer
+        self.ids = {}
 
 def to_geojson(data,geom_type='Polygon'):
     '''Currently only supports Polygon and Points.'''
 
     if geom_type=='Polygon':
         geojson = { 
-        "type": "Feature",
-        "geometry": {
-            "type": geom_type,
-            "coordinates": data['feature']['geometry']['rings']},
-        "properties":
-        data['feature']['attributes']
+            "type": "Feature",
+            "geometry": {
+                "type": geom_type,
+                "coordinates": data['feature']['geometry']['rings']},
+            "properties":
+            data['feature']['attributes']
         }
     else:
         geojson = { 
-        "type": "Feature",
-        "geometry": {
-            "type": geom_type,
-            "coordinates": [data['feature']['geometry']['x'], 
-                data['feature']['geometry']['y']]},
-        "properties":
-        data['feature']['attributes']
+            "type": "Feature",
+            "geometry": {
+                "type": geom_type,
+                "coordinates": [data['feature']['geometry']['x'], 
+                    data['feature']['geometry']['y']]},
+            "properties":
+            data['feature']['attributes']
         }
 
     return geojson 
+
+def main():
+    return None
+
+if __name__=='__main__':
+    main()
