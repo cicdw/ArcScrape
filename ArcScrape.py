@@ -14,6 +14,12 @@ class Server(object):
         else:
             self.__url = url 
 
+    def get_range(self, nums):
+        out = {}
+        for num in nums:
+            out[num] = self.get_id(num)
+        return out
+
     def get_id(self,num):
         url = self.url + '/0/{}?f=pjson'.format(num)
         with urllib.request.urlopen(url) as site:
