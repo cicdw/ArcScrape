@@ -40,6 +40,10 @@ class Server(object):
             self.ids[num] = to_geojson(data,geom_type=geom_type)
 
     def save_all(self, loc):
+
+        if loc[-1] != '/':
+            loc += '/'
+
         for num,data in self.ids.items():
             with open(loc + '{}.json'.format(num), 'w') as f:
                 json.dump(data,f)
