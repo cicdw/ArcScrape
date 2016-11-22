@@ -21,14 +21,15 @@ class Server(object):
         return out
 
     def get_id(self,num):
-        url = self.url + '/0/{}?f=pjson'.format(num)
+        url = self.url + '/{0}/{1}?f=json&pretty=true'.format(self.layer, num)
         with urllib.request.urlopen(url) as site:
             resp = site.read().decode('utf-8')
 
         return json.loads(resp)
 
-    def __init__(self, base_url):
+    def __init__(self, base_url, layer=0):
         self.url = base_url
+        self.layer = layer
 
 def to_geojson(data,geom_type='Polygon'):
     '''Currently only supports Polygon and Points.'''
