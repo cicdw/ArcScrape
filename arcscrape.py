@@ -98,6 +98,15 @@ def to_geojson(data,geom_type='Polygon'):
     return geojson
 
 def main():
+    '''Can add geo flag and help flag.'''
+
+    _, server_url, layer, min_id, max_id = sys.argv
+    map_server = Server(server_url, layer=layer)
+    min_id, max_id = int(min_id), int(max_id)
+    _ = map_server.get_range(range(min_id, max_id+1))
+    map_server.convert_all()
+    map_server.save_all('./')
+
     return None
 
 if __name__=='__main__':
