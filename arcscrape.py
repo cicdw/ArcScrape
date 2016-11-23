@@ -24,7 +24,7 @@ class Server(object):
 
     def get_id(self,num):
         if num in self.ids:
-            return self.ids[num]
+            return self.ids[num][0]
 
         else:
             url = self.url + '/{0}/{1}?f=json&pretty=true'.format(self.layer, num)
@@ -32,12 +32,23 @@ class Server(object):
                 resp = site.read().decode('utf-8')
 
             out = json.loads(resp)
-            self.ids[num] = out
+            self.ids[num] = (out, False)
             return out
+
+    def convert_id(self,num, geom_type='Polygon'):
+        '''Converts given ID from JSON to geo-JSON.'''
+
+        data, flag = self.ids[num]
+        if not flag:
+            self.ids[num] = (to_geojson(data, geom_type=geom_type), True)
+        return None
 
     def convert_all(self,geom_type='Polygon'):
 
-        self.ids = {num : to_geojson(data, geom_type=geom_type) for num,data in self.ids.items()}
+        for num in self.ids:
+            self.convert_id(num, geom_type=geom_type)
+
+        return None
 
     def save_all(self, loc):
 
