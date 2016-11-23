@@ -4,7 +4,7 @@ import sys
 import urllib.request
 
 class Server(object):
-
+    
     @property
     def url(self):
         return self.__url
@@ -17,12 +17,17 @@ class Server(object):
             self.__url = url 
 
     def get_range(self, nums):
+        '''Given a list of IDs, returns a dictionary {ID : JSON}
+        pulled from the server URL.'''
+
         out = {}
         for num in nums:
             out[num] = self.get_id(num)
         return out
 
     def get_id(self,num):
+        '''Given an integer ID, returns a JSON pulled from the server URL.'''
+
         if num in self.ids:
             return self.ids[num][0]
 
@@ -36,7 +41,7 @@ class Server(object):
             return out
 
     def convert_id(self,num, geom_type='Polygon'):
-        '''Converts given ID from JSON to geo-JSON.'''
+        '''Converts given integer ID from JSON to geo-JSON.'''
 
         data, flag = self.ids[num]
         if not flag:
@@ -44,6 +49,7 @@ class Server(object):
         return None
 
     def convert_all(self,geom_type='Polygon'):
+        '''Converts all queried IDs from JSON to geo-JSON.'''
 
         for num in self.ids:
             self.convert_id(num, geom_type=geom_type)
@@ -51,6 +57,8 @@ class Server(object):
         return None
 
     def save_all(self, loc):
+        '''Given a directory location (string), saves all queried IDs
+        as JSON files to that directory.'''
 
         if loc[-1] != '/':
             loc += '/'
