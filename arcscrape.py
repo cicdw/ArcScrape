@@ -1,113 +1,87 @@
-import getopt
 import json
-import sys
-import urllib.request
+import requests
 
-class Server(object):
-    
-    @property
-    def url(self):
-        return self.__url
 
-    @url.setter
-    def url(self,url):
-        if url[-1] == '/':
-            self.__url = url[:-1]
-        else:
-            self.__url = url 
+BASE_URL = '''https://**/**/MapServer/0/query'''
+params = {
+          'text': None,
+#         'where': '1=1',
+#          'objectIds': 2273,
+          'time': None,
+          'geometry': None,
+          'geometryType': 'esriGeometryEnvelope',
+          'inSR': None,
+          'spatialRel': 'esriSpatialRelIntersects',
+          'relationParam': None,
+          'outFields': '*',
+          'returnGeometry': 'true',
+          'returnTrueCurves': 'false',
+          'maxAllowableOffset': None,
+          'geometryPrecision': None,
+          'outSR': None,
+          'returnIdsOnly': 'false',
+          'returnCountOnly': 'false',
+          'orderByFields': None,
+          'groupByFieldsForStatistics': None,
+          'outStatistics': None,
+          'returnZ': 'false',
+          'returnM': 'false',
+          'gdbVersion': None,
+          'returnDistinctValues': 'false',
+          'resultOffset': None,
+          'resultRecordCount': None,
+          'queryByDistance': None,
+          'returnExtentsOnly': 'false',
+          'datumTransformation': None,
+          'parameterValues': None,
+          'rangeValues': None,
+          'f': 'pjson'}
 
-    def get_range(self, nums):
-        '''Given a list of IDs, returns a dictionary {ID : JSON}
-        pulled from the server URL.'''
 
-        out = {}
-        for num in nums:
-            out[num] = self.get_id(num)
-        return out
-
-    def get_id(self,num):
-        '''Given an integer ID, returns a JSON pulled from the server URL.'''
-
-        if num in self.ids:
-            return self.ids[num][0]
-
-        else:
-            url = self.url + '/{0}/{1}?f=json&pretty=true'.format(self.layer, num)
-            with urllib.request.urlopen(url) as site:
-                resp = site.read().decode('utf-8')
-
-            out = json.loads(resp)
-            self.ids[num] = (out, False)
-            return out
-
-    def convert_id(self,num, geom_type='Polygon'):
-        '''Converts given integer ID from JSON to geo-JSON.'''
-
-        data, flag = self.ids[num]
-        if not flag:
-            self.ids[num] = (to_geojson(data, geom_type=geom_type), True)
-        return None
-
-    def convert_all(self,geom_type='Polygon'):
-        '''Converts all queried IDs from JSON to geo-JSON.'''
-
-        for num in self.ids:
-            self.convert_id(num, geom_type=geom_type)
-
-        return None
-
-    def save_all(self, loc):
-        '''Given a directory location (string), saves all queried IDs
-        as JSON files to that directory.'''
-
-        if loc[-1] != '/':
-            loc += '/'
-
-        for num,data in self.ids.items():
-            with open(loc + '{}.json'.format(num), 'w') as f:
-                json.dump(data,f)
-
-    def __init__(self, base_url, layer=0):
-        self.url = base_url
-        self.layer = layer
-        self.ids = {}
-
-def to_geojson(data,geom_type='Polygon'):
-    '''Currently only supports Polygon and Points.'''
-
-    if geom_type=='Polygon':
-        geojson = { 
-            "type": "Feature",
-            "geometry": {
-                "type": geom_type,
-                "coordinates": data['feature']['geometry']['rings']},
-            "properties":
-            data['feature']['attributes']
-        }
+def get_json_data(**kwargs):
+    '''Given specific kwargs to update params dict with, querys the MapServer
+    and converts the resulting request into a dictionary.'''
+    new_params = params.copy()
+    for key, value in kwargs.items():
+        new_params[key] = value
+    web_data = requests.get(BASE_URL, params=new_params)
+    if web_data.ok:
+        return json.loads(web_data.text)
     else:
-        geojson = { 
-            "type": "Feature",
-            "geometry": {
-                "type": geom_type,
-                "coordinates": [data['feature']['geometry']['x'], 
-                    data['feature']['geometry']['y']]},
-            "properties":
-            data['feature']['attributes']
-        }
+        raise ValueError('{} resulted in a bad web request.'.format(kwargs))
+
+
+def to_geojson(data):
+    '''Given a dictionary, formats the data into a standard geojson polygon format'''
+    geojson = {
+        "type": "Feature",
+        "geometry": {
+            "type": 'Polygon',
+            "coordinates": data['features'][0]['geometry']['rings']},
+        "properties":
+        data['features'][0]['attributes']
+    }
 
     return geojson
 
+
+def get_all_object_ids():
+    '''Retrieves all available object IDs from the MapServer, and returns them
+    as a list of integers'''
+    object_ids = get_json_data(returnIdsOnly='true', returnGeometry='false', objectIds=None, where='1=1')
+    ids = []
+    for oid in object_ids['objectIds']:
+        ids.append(int(oid))
+    return ids
+
+
 def main():
-    '''Can add geo flag and help flag.'''
+    oids = get_all_object_ids()
+    for oid in oids:
+        data = to_geojson(get_json_data(objectIds=oid))
+        with open('{}.json'.format(oid), 'w') as f:
+            json.dump(data, f, sort_keys=True, indent=4)
 
-    _, server_url, layer, min_id, max_id = sys.argv
-    map_server = Server(server_url, layer=layer)
-    min_id, max_id = int(min_id), int(max_id)
-    _ = map_server.get_range(range(min_id, max_id+1))
-    map_server.convert_all()
-    map_server.save_all('./')
 
-    return None
-
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
